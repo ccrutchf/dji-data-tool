@@ -88,6 +88,6 @@ public class AircraftData {
         builder.append(heading);
         builder.append("\n");
 
-        return super.toString();
+        return builder.toString();
     }
 }

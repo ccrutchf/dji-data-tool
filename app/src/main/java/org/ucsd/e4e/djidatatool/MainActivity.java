@@ -27,12 +27,8 @@ import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
 import dji.common.flightcontroller.CompassState;
 import dji.common.flightcontroller.FlightControllerState;
-import dji.common.flightcontroller.FlightOrientationMode;
-import dji.common.flightcontroller.imu.IMUState;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
-import dji.sdk.battery.Battery;
-import dji.sdk.flightcontroller.Compass;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKInitEvent;
 import dji.sdk.sdkmanager.DJISDKManager;
@@ -45,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static BaseProduct mProduct;
     private Handler mHandler;
 
+    private AircraftDataManager aircraftDataManager;
     private BatteryState batteryState;
 
     private static final String[] REQUIRED_PERMISSION_LIST = new String[]{
@@ -210,6 +207,8 @@ public class MainActivity extends AppCompatActivity {
         MainActivity that = this;
 
         Aircraft aircraft = (Aircraft) DJISDKManager.getInstance().getProduct();
+        aircraftDataManager = new AircraftDataManager();
+
         aircraft.getBattery().setStateCallback(new BatteryState.Callback() {
             @Override
             public void onUpdate(BatteryState batteryState) {
@@ -218,15 +217,10 @@ public class MainActivity extends AppCompatActivity {
                 updateAircraftStatus();
             }
         });
-        aircraft.getFlightController().setStateCallback(new FlightControllerState.Callback() {
+
+        aircraftDataManager.setAircraftDataChanged(new AircraftDataChanged() {
             @Override
-            public void onUpdate(@NonNull FlightControllerState flightControllerState) {
-                updateAircraftStatus();
-            }
-        });
-        aircraft.getFlightController().getCompass().setCompassStateCallback(new CompassState.Callback() {
-            @Override
-            public void onUpdate(@NonNull CompassState compassState) {
+            public void AircraftDataChanged(AircraftData aircraftData) {
                 updateAircraftStatus();
             }
         });
@@ -248,7 +242,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Aircraft aircraft = (Aircraft) DJISDKManager.getInstance().getProduct();
-        Compass compass = aircraft.getFlightController().getCompass();
         FlightControllerState flightControllerState = aircraft.getFlightController().getState();
 
         StringBuilder builder = new StringBuilder();
@@ -261,13 +254,12 @@ public class MainActivity extends AppCompatActivity {
         builder.append(flightControllerState.getSatelliteCount());
         builder.append("\n\n");
 
-        AircraftDataManager aircraftDataManager = new AircraftDataManager();
         builder.append(aircraftDataManager.getAircraftData());
 
         return builder.toString();
     }
 
-    private Runnable updateRunnable = new Runnable() {
+    private final Runnable updateRunnable = new Runnable() {
 
         @Override
         public void run() {
