@@ -253,53 +253,16 @@ public class MainActivity extends AppCompatActivity {
 
         StringBuilder builder = new StringBuilder();
 
-        builder.append("Model: ");
-        builder.append(aircraft.getModel().getDisplayName());
-        builder.append("\n");
-
         builder.append("Battery: ");
         builder.append(batteryState.getChargeRemainingInPercent());
         builder.append("%\n");
 
         builder.append("GPS Signal Strength: ");
         builder.append(flightControllerState.getSatelliteCount());
-        builder.append("\n");
+        builder.append("\n\n");
 
-        builder.append("Roll: ");
-        builder.append(flightControllerState.getAttitude().roll);
-        builder.append("\n");
-
-        builder.append("Pitch: ");
-        builder.append(flightControllerState.getAttitude().pitch);
-        builder.append("\n");
-
-        builder.append("Yaw: ");
-        builder.append(flightControllerState.getAttitude().roll);
-        builder.append("\n");
-
-        builder.append("Longitude: ");
-        builder.append(flightControllerState.getAircraftLocation().getLongitude());
-        builder.append("\n");
-
-        builder.append("Latitude: ");
-        builder.append(flightControllerState.getAircraftLocation().getLatitude());
-        builder.append("\n");
-
-        builder.append("Altitude: ");
-        builder.append(flightControllerState.getAircraftLocation().getAltitude());
-        builder.append("m\n");
-
-        builder.append("Velocity (x, y, z) m/s: (");
-        builder.append(flightControllerState.getVelocityX());
-        builder.append(", ");
-        builder.append(flightControllerState.getVelocityY());
-        builder.append(", ");
-        builder.append(flightControllerState.getVelocityZ());
-        builder.append(")\n");
-
-        builder.append("Heading :");
-        builder.append(compass.getHeading());
-        builder.append("\n");
+        AircraftDataManager aircraftDataManager = new AircraftDataManager();
+        builder.append(aircraftDataManager.getAircraftData());
 
         return builder.toString();
     }
