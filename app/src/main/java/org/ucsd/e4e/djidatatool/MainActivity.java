@@ -29,8 +29,19 @@ import dji.common.battery.BatteryState;
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.mission.waypoint.Waypoint;
+import dji.common.mission.waypoint.WaypointAction;
+import dji.common.mission.waypoint.WaypointActionType;
+import dji.common.mission.waypoint.WaypointMission;
+import dji.common.mission.waypoint.WaypointMissionFinishedAction;
+import dji.common.mission.waypoint.WaypointMissionFlightPathMode;
+import dji.common.mission.waypoint.WaypointMissionGotoWaypointMode;
+import dji.common.model.LocationCoordinate2D;
+import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
+import dji.sdk.mission.MissionControl;
+import dji.sdk.mission.waypoint.WaypointMissionOperator;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKInitEvent;
 import dji.sdk.sdkmanager.DJISDKManager;
@@ -84,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         EditText maxAltitudeEditText = (EditText)findViewById(R.id.maxAltitude);
         EditText altitudeIntervalEditText = (EditText)findViewById(R.id.altitudeInterval);
         Button uploadButton = (Button)findViewById(R.id.uploadButton);
+        Button startButton = (Button)findViewById(R.id.startButton);
 
         uploadButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,6 +104,47 @@ public class MainActivity extends AppCompatActivity {
                 int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
                 int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
 
+                AircraftData aircraftData = aircraftDataManager.getAircraftData();
+                double latitude = aircraftData.getLatitude();
+                double longitude = aircraftData.getLongitude();
+
+                WaypointMission.Builder builder = new WaypointMission.Builder();
+                builder.autoFlightSpeed(5f);
+                builder.maxFlightSpeed(10f);
+                builder.setExitMissionOnRCSignalLostEnabled(true);
+                builder.finishedAction(WaypointMissionFinishedAction.GO_HOME);
+                builder.flightPathMode(WaypointMissionFlightPathMode.NORMAL);
+                builder.gotoFirstWaypointMode(WaypointMissionGotoWaypointMode.SAFELY);
+
+                for (int i = minAltitude; i <= maxAltitude; i += altitudeInterval) {
+                    Waypoint waypoint = new Waypoint();
+                    waypoint.altitude = i;
+                    waypoint.coordinate = new LocationCoordinate2D(latitude, longitude);
+                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 60 * 1000));
+
+                    builder.addWaypoint(waypoint);
+                }
+
+                WaypointMission mission = builder.build();
+                MissionControl.getInstance().getWaypointMissionOperator().loadMission(mission);
+
+                startButton.setEnabled(true);
+            }
+        });
+
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int minAltitude = Integer.parseInt(minAltitudeEditText.getText().toString());
+                int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
+                int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
+
+                MissionControl.getInstance().getWaypointMissionOperator().startMission(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        aircraftDataManager.stopDataCollection();
+                    }
+                });
                 aircraftDataManager.startDataCollection(minAltitude, maxAltitude, altitudeInterval);
             }
         });
