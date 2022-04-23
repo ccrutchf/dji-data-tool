@@ -10,9 +10,9 @@ public class AircraftData {
     private final double latitude;
     private final double longitude;
     private final double altitude;
-    private final double xVelocity;
-    private final double yVelocity;
-    private final double zVelocity;
+    private final double velocityX;
+    private final double velocityY;
+    private final double velocityZ;
     private final double heading;
     private final long timestamp;
 
@@ -24,9 +24,9 @@ public class AircraftData {
             double latitude,
             double longitude,
             double altitude,
-            double xVelocity,
-            double yVelocity,
-            double zVelocity,
+            double velocityX,
+            double velocityY,
+            double velocityZ,
             double heading,
             long timestamp) {
         this.model = model;
@@ -36,11 +36,59 @@ public class AircraftData {
         this.latitude = latitude;
         this.longitude = longitude;
         this.altitude = altitude;
-        this.xVelocity = xVelocity;
-        this.yVelocity = yVelocity;
-        this.zVelocity = zVelocity;
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.velocityZ = velocityZ;
         this.heading = heading;
         this.timestamp = timestamp;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public double getRoll() {
+        return roll;
+    }
+
+    public double getPitch() {
+        return pitch;
+    }
+
+    public double getYaw() {
+        return yaw;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public double getAltitude() {
+        return altitude;
+    }
+
+    public double getVelocityX() {
+        return velocityX;
+    }
+
+    public double getVelocityY() {
+        return velocityY;
+    }
+
+    public double getVelocityZ() {
+        return velocityZ;
+    }
+
+    public double getHeading() {
+        return heading;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     @NonNull
@@ -77,11 +125,11 @@ public class AircraftData {
         builder.append("m\n");
 
         builder.append("Velocity (x, y, z) m/s: (");
-        builder.append(xVelocity);
+        builder.append(velocityX);
         builder.append(", ");
-        builder.append(yVelocity);
+        builder.append(velocityY);
         builder.append(", ");
-        builder.append(zVelocity);
+        builder.append(velocityZ);
         builder.append(")\n");
 
         builder.append("Heading :");

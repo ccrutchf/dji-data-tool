@@ -9,7 +9,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import dji.common.battery.BatteryState;
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
-import dji.common.flightcontroller.CompassState;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
@@ -77,6 +79,22 @@ public class MainActivity extends AppCompatActivity {
 
         //Initialize DJI SDK Manager
         mHandler = new Handler(Looper.getMainLooper());
+
+        EditText minAltitudeEditText = (EditText)findViewById(R.id.minAltitude);
+        EditText maxAltitudeEditText = (EditText)findViewById(R.id.maxAltitude);
+        EditText altitudeIntervalEditText = (EditText)findViewById(R.id.altitudeInterval);
+        Button uploadButton = (Button)findViewById(R.id.uploadButton);
+
+        uploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int minAltitude = Integer.parseInt(minAltitudeEditText.getText().toString());
+                int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
+                int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
+
+                aircraftDataManager.startDataCollection(minAltitude, maxAltitude, altitudeInterval);
+            }
+        });
     }
 
     /**
