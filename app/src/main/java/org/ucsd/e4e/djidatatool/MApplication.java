@@ -9,6 +9,7 @@ public class MApplication extends Application {
     @Override
     protected void attachBaseContext(Context paramContext) {
         super.attachBaseContext(paramContext);
+        // Entry point for the DJI SDK.
         Helper.install(MApplication.this);
     }
 }

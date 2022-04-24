@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         //Initialize DJI SDK Manager
         mHandler = new Handler(Looper.getMainLooper());
 
+        // Get the controls necessary to handle the starting of data collection.
         EditText minAltitudeEditText = (EditText)findViewById(R.id.minAltitude);
         EditText maxAltitudeEditText = (EditText)findViewById(R.id.maxAltitude);
         EditText altitudeIntervalEditText = (EditText)findViewById(R.id.altitudeInterval);
@@ -108,9 +109,13 @@ public class MainActivity extends AppCompatActivity {
                 double latitude = aircraftData.getLatitude();
                 double longitude = aircraftData.getLongitude();
 
+                // Create a waypoint mission that will start at minAltitude and go up by altitudeInterval,
+                // until it reaches the maxAltitude.  It will use the aircraft's current lat/long for safety reasons.
+                // It will attempt to maintain a vertical column.
+
                 WaypointMission.Builder builder = new WaypointMission.Builder();
-                builder.autoFlightSpeed(5f);
-                builder.maxFlightSpeed(10f);
+                builder.autoFlightSpeed(5f); // in m/s
+                builder.maxFlightSpeed(10f); // in m/s
                 builder.setExitMissionOnRCSignalLostEnabled(true);
                 builder.finishedAction(WaypointMissionFinishedAction.GO_HOME);
                 builder.flightPathMode(WaypointMissionFlightPathMode.NORMAL);
@@ -120,14 +125,15 @@ public class MainActivity extends AppCompatActivity {
                     Waypoint waypoint = new Waypoint();
                     waypoint.altitude = i;
                     waypoint.coordinate = new LocationCoordinate2D(latitude, longitude);
-                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 60 * 1000));
+                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 60 * 1000)); // Stay at the waypoint for 60 seconds.
 
                     builder.addWaypoint(waypoint);
                 }
 
                 WaypointMission mission = builder.build();
-                MissionControl.getInstance().getWaypointMissionOperator().loadMission(mission);
+                MissionControl.getInstance().getWaypointMissionOperator().loadMission(mission); // Blocking
 
+                // By using a separate button, we ensure that we can't accidentally start the mission.
                 startButton.setEnabled(true);
             }
         });
@@ -139,13 +145,13 @@ public class MainActivity extends AppCompatActivity {
                 int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
                 int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
 
+                aircraftDataManager.startDataCollection(minAltitude, maxAltitude, altitudeInterval);
                 MissionControl.getInstance().getWaypointMissionOperator().startMission(new CommonCallbacks.CompletionCallback() {
                     @Override
                     public void onResult(DJIError djiError) {
                         aircraftDataManager.stopDataCollection();
                     }
                 });
-                aircraftDataManager.startDataCollection(minAltitude, maxAltitude, altitudeInterval);
             }
         });
     }
@@ -271,6 +277,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Called when product state changes.
     private void notifyStatusChange() {
         mHandler.removeCallbacks(updateRunnable);
         mHandler.postDelayed(updateRunnable, 500);
@@ -278,23 +285,25 @@ public class MainActivity extends AppCompatActivity {
         MainActivity that = this;
 
         Aircraft aircraft = (Aircraft) DJISDKManager.getInstance().getProduct();
-        aircraftDataManager = new AircraftDataManager();
+        if (aircraft != null) {
+            aircraftDataManager = new AircraftDataManager();
 
-        aircraft.getBattery().setStateCallback(new BatteryState.Callback() {
-            @Override
-            public void onUpdate(BatteryState batteryState) {
-                that.batteryState = batteryState;
+            aircraft.getBattery().setStateCallback(new BatteryState.Callback() {
+                @Override
+                public void onUpdate(BatteryState batteryState) {
+                    that.batteryState = batteryState;
 
-                updateAircraftStatus();
-            }
-        });
+                    updateAircraftStatus();
+                }
+            });
 
-        aircraftDataManager.setAircraftDataChanged(new AircraftDataChanged() {
-            @Override
-            public void AircraftDataChanged(AircraftData aircraftData) {
-                updateAircraftStatus();
-            }
-        });
+            aircraftDataManager.setAircraftDataChanged(new AircraftDataChanged() {
+                @Override
+                public void AircraftDataChanged(AircraftData aircraftData) {
+                    updateAircraftStatus();
+                }
+            });
+        }
     }
 
     private void updateAircraftStatus() {

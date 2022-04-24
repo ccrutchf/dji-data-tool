@@ -29,8 +29,10 @@ public class AircraftDataManager {
 
     public AircraftDataManager() {
         aircraft = (Aircraft) DJISDKManager.getInstance().getProduct();
+        // We don't know how many threads we need.  This threadpool will create them lazily.
         threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
+        // These callbacks are called 10 times a second.
         aircraft.getFlightController().setStateCallback(new FlightControllerState.Callback() {
             @Override
             public void onUpdate(@NonNull FlightControllerState flightControllerState) {
@@ -50,6 +52,7 @@ public class AircraftDataManager {
             return;
         }
 
+        // Create the database to store the flight logs in.
         String dbPath = String.format("%s/%s_%s_%s_%s_%s.db",
                 Environment.getExternalStorageDirectory().getAbsolutePath(),
                 aircraft.getModel().getDisplayName().toLowerCase(Locale.ROOT).replace(' ', '-'),
@@ -66,6 +69,7 @@ public class AircraftDataManager {
                 "velocityX REAL, velocityY REAL, velocityZ REAL," +
                 "heading REAL, timestamp INTEGER)");
 
+        // Save all the metadata so that we know how this was generated.
         insertMetadata("aircraft_model", getAircraftData().getModel());
         insertMetadata("min_altitude", Integer.toString(minAltitude));
         insertMetadata("max_altitude", Integer.toString(maxAltitude));
@@ -102,7 +106,7 @@ public class AircraftDataManager {
                 flightControllerState.getVelocityY(),
                 flightControllerState.getVelocityZ(),
                 compass.getHeading(),
-                System.nanoTime());
+                System.nanoTime()); // Benchmarks done indicate this is the most efficient/accurate way of getting time.
     }
 
     private void insertAircraftData(AircraftData aircraftData) {

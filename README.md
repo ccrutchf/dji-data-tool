@@ -1,0 +1,4 @@
+# DJI Data Tool
+This tool's purpose is to collect data from DJI drones in a hover.  It does so by saving it to a SQL database in the root directory of your emulated external storage.  To start data collection, ensure that you are sufficiently away from people.  The data collection will execute in a vertical column from where you begin.  Update the min, max and altitude interval settings.  Then push upload.  The Go button will be enabled when upload is complete.  The drone will start at the min altitude, flying down if necessary.  It will then go up by the interval amount until the max altitude, hovering at each altitude value for 1 minute.  When finished, it will stop data collection, then return to home.
+
+Toggling the mode switch should be enough to cancel the flight.  In the case where this is necessary, please restart the app before trying again.
