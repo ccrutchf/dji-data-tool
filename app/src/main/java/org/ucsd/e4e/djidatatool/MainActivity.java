@@ -36,7 +36,7 @@ import dji.common.mission.waypoint.WaypointMission;
 import dji.common.mission.waypoint.WaypointMissionFinishedAction;
 import dji.common.mission.waypoint.WaypointMissionFlightPathMode;
 import dji.common.mission.waypoint.WaypointMissionGotoWaypointMode;
-import dji.common.model.LocationCoordinate2D;
+import dji.common.mission.waypoint.WaypointMissionHeadingMode;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
@@ -101,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
         uploadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                uploadButton.setEnabled(false);
+
                 int minAltitude = Integer.parseInt(minAltitudeEditText.getText().toString());
                 int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
                 int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
@@ -108,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 AircraftData aircraftData = aircraftDataManager.getAircraftData();
                 double latitude = aircraftData.getLatitude();
                 double longitude = aircraftData.getLongitude();
+                double heading = aircraftData.getHeading();
 
                 // Create a waypoint mission that will start at minAltitude and go up by altitudeInterval,
                 // until it reaches the maxAltitude.  It will use the aircraft's current lat/long for safety reasons.
@@ -120,21 +123,26 @@ public class MainActivity extends AppCompatActivity {
                 builder.finishedAction(WaypointMissionFinishedAction.GO_HOME);
                 builder.flightPathMode(WaypointMissionFlightPathMode.NORMAL);
                 builder.gotoFirstWaypointMode(WaypointMissionGotoWaypointMode.SAFELY);
+                builder.headingMode(WaypointMissionHeadingMode.USING_WAYPOINT_HEADING);
 
                 for (int i = minAltitude; i <= maxAltitude; i += altitudeInterval) {
-                    Waypoint waypoint = new Waypoint();
-                    waypoint.altitude = i;
-                    waypoint.coordinate = new LocationCoordinate2D(latitude, longitude);
-                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 60 * 1000)); // Stay at the waypoint for 60 seconds.
-
+                    // Can only set waypoint for 30 seconds.
+                    Waypoint waypoint = new Waypoint(latitude, longitude, i);
+                    waypoint.heading = (int)heading;
+                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 30 * 1000)); // Stay at the waypoint for 60 seconds.
                     builder.addWaypoint(waypoint);
                 }
 
                 WaypointMission mission = builder.build();
-                MissionControl.getInstance().getWaypointMissionOperator().loadMission(mission); // Blocking
-
-                // By using a separate button, we ensure that we can't accidentally start the mission.
-                startButton.setEnabled(true);
+                WaypointMissionOperator operator = MissionControl.getInstance().getWaypointMissionOperator();
+                operator.loadMission(mission);
+                operator.uploadMission(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        // By using a separate button, we ensure that we can't accidentally start the mission.
+                        startButton.setEnabled(true);
+                    }
+                });
             }
         });
 

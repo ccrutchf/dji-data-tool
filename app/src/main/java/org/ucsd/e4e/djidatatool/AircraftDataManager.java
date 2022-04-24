@@ -9,6 +9,7 @@ import android.os.Environment;
 
 import androidx.annotation.NonNull;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -52,15 +53,16 @@ public class AircraftDataManager {
             return;
         }
 
-        // Create the database to store the flight logs in.
-        String dbPath = String.format("%s/%s_%s_%s_%s_%s.db",
-                Environment.getExternalStorageDirectory().getAbsolutePath(),
+        File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File dbPath = new File(root, String.format("%s_%s_%s_%s_%s.db",
                 aircraft.getModel().getDisplayName().toLowerCase(Locale.ROOT).replace(' ', '-'),
                 minAltitude,
                 maxAltitude,
                 altitudeInterval,
-                new SimpleDateFormat("yyyyMMddHHmm").format(new Date()));
-        database = SQLiteDatabase.openOrCreateDatabase(dbPath, null);
+                new SimpleDateFormat("yyyyMMddHHmm").format(new Date())));
+        database = SQLiteDatabase.openOrCreateDatabase(dbPath.getPath(), null);
+
+        database.beginTransaction();
 
         database.execSQL("CREATE TABLE Metadata (name TEXT, value TEXT)");
         database.execSQL("CREATE TABLE FlightData (" +
@@ -75,6 +77,9 @@ public class AircraftDataManager {
         insertMetadata("max_altitude", Integer.toString(maxAltitude));
         insertMetadata("altitude_interval", Integer.toString(altitudeInterval));
         insertMetadata("date", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()));
+
+        database.setTransactionSuccessful();
+        database.endTransaction();
     }
 
     public void stopDataCollection() {
@@ -117,9 +122,9 @@ public class AircraftDataManager {
         values.put("latitude", aircraftData.getLatitude());
         values.put("longitude", aircraftData.getLongitude());
         values.put("altitude", aircraftData.getAltitude());
-        values.put("velocity_x", aircraftData.getVelocityX());
-        values.put("velocity_y", aircraftData.getVelocityY());
-        values.put("velocity_z", aircraftData.getVelocityZ());
+        values.put("velocityX", aircraftData.getVelocityX());
+        values.put("velocityY", aircraftData.getVelocityY());
+        values.put("velocityZ", aircraftData.getVelocityZ());
         values.put("heading", aircraftData.getHeading());
         values.put("timestamp", aircraftData.getTimestamp());
 
