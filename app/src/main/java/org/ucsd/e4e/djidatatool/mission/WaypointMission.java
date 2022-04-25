@@ -121,9 +121,9 @@ public class WaypointMission {
         // https://math.stackexchange.com/questions/3097506/components-of-a-3d-vector-given-specific-angles
         double speed = Math.min(flightSpeed * (distance / flightSpeed), flightSpeed);
         double denom = Math.sqrt(Math.pow(Math.cos(beta), 2) * Math.pow(Math.sin(alpha), 2) + Math.pow(Math.sin(beta), 2));
-        float velocityX = (float)(speed * Math.cos(alpha) * Math.sin(beta) / denom);
-        float velocityY = (float)(speed * Math.cos(beta) * Math.sin(alpha) / denom);
-        float velocityZ = (float)(speed * Math.sin(alpha) * Math.sin(beta) / denom);
+        float velocityX = (float)Math.min(speed * Math.cos(alpha) * Math.sin(beta) / denom, speed);
+        float velocityY = (float)Math.min(speed * Math.cos(beta) * Math.sin(alpha) / denom, speed);
+        float velocityZ = (float)Math.min(speed * Math.sin(alpha) * Math.sin(beta) / denom, speed);
 
         flightController.sendVirtualStickFlightControlData(new FlightControlData(velocityX, velocityY, 0, velocityZ), new CommonCallbacks.CompletionCallback() {
             @Override
