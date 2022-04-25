@@ -21,6 +21,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import org.ucsd.e4e.djidatatool.mission.FinishAction;
+import org.ucsd.e4e.djidatatool.mission.Waypoint;
+import org.ucsd.e4e.djidatatool.mission.WaypointAction;
+import org.ucsd.e4e.djidatatool.mission.WaypointMission;
+import org.ucsd.e4e.djidatatool.mission.WaypointMissionBuilder;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,26 +35,13 @@ import dji.common.battery.BatteryState;
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
 import dji.common.flightcontroller.FlightControllerState;
-import dji.common.mission.waypoint.Waypoint;
-import dji.common.mission.waypoint.WaypointAction;
-import dji.common.mission.waypoint.WaypointActionType;
-import dji.common.mission.waypoint.WaypointMission;
-import dji.common.mission.waypoint.WaypointMissionFinishedAction;
-import dji.common.mission.waypoint.WaypointMissionFlightPathMode;
-import dji.common.mission.waypoint.WaypointMissionGotoWaypointMode;
-import dji.common.mission.waypoint.WaypointMissionHeadingMode;
-import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
-import dji.sdk.mission.MissionControl;
-import dji.sdk.mission.waypoint.WaypointMissionOperator;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKInitEvent;
 import dji.sdk.sdkmanager.DJISDKManager;
 
 public class MainActivity extends AppCompatActivity {
-
-
     private static final String TAG = MainActivity.class.getName();
     public static final String FLAG_CONNECTION_CHANGE = "dji_sdk_connection_change";
     private static BaseProduct mProduct;
@@ -56,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AircraftDataManager aircraftDataManager;
     private BatteryState batteryState;
+    private WaypointMission waypointMission;
 
     private static final String[] REQUIRED_PERMISSION_LIST = new String[]{
             Manifest.permission.VIBRATE,
@@ -98,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
         Button uploadButton = (Button)findViewById(R.id.uploadButton);
         Button startButton = (Button)findViewById(R.id.startButton);
 
+        MainActivity that = this;
+
         uploadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -110,53 +106,40 @@ public class MainActivity extends AppCompatActivity {
                 AircraftData aircraftData = aircraftDataManager.getAircraftData();
                 double latitude = aircraftData.getLatitude();
                 double longitude = aircraftData.getLongitude();
-                double heading = aircraftData.getHeading();
 
                 // Create a waypoint mission that will start at minAltitude and go up by altitudeInterval,
                 // until it reaches the maxAltitude.  It will use the aircraft's current lat/long for safety reasons.
                 // It will attempt to maintain a vertical column.
 
-                WaypointMission.Builder builder = new WaypointMission.Builder();
-                builder.autoFlightSpeed(5f); // in m/s
-                builder.maxFlightSpeed(10f); // in m/s
-                builder.setExitMissionOnRCSignalLostEnabled(true);
-                builder.finishedAction(WaypointMissionFinishedAction.GO_HOME);
-                builder.flightPathMode(WaypointMissionFlightPathMode.NORMAL);
-                builder.gotoFirstWaypointMode(WaypointMissionGotoWaypointMode.SAFELY);
-                builder.headingMode(WaypointMissionHeadingMode.USING_WAYPOINT_HEADING);
+                WaypointMissionBuilder builder = new WaypointMissionBuilder()
+                        .flightSpeed(5f) // in m/s
+                        .finishAction(FinishAction.GO_HOME);
 
-                for (int i = minAltitude; i <= maxAltitude; i += altitudeInterval) {
-                    // Can only set waypoint for 30 seconds.
-                    Waypoint waypoint = new Waypoint(latitude, longitude, i);
-                    waypoint.heading = (int)heading;
-                    waypoint.addAction(new WaypointAction(WaypointActionType.STAY, 30 * 1000)); // Stay at the waypoint for 60 seconds.
+                for (int altitude = minAltitude; altitude <= maxAltitude; altitude += altitudeInterval) {
+                    Waypoint waypoint = new Waypoint(latitude, longitude, altitude);
+                    waypoint.setAction(WaypointAction.STAY, 1000 * 60); // 60 seconds
+
                     builder.addWaypoint(waypoint);
                 }
 
-                WaypointMission mission = builder.build();
-                WaypointMissionOperator operator = MissionControl.getInstance().getWaypointMissionOperator();
-                operator.loadMission(mission);
-                operator.uploadMission(new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onResult(DJIError djiError) {
-                        // By using a separate button, we ensure that we can't accidentally start the mission.
-                        startButton.setEnabled(true);
-                    }
-                });
+                that.waypointMission = builder.build();
+                startButton.setEnabled(true);
             }
         });
 
         startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                startButton.setEnabled(false);
+
                 int minAltitude = Integer.parseInt(minAltitudeEditText.getText().toString());
                 int maxAltitude = Integer.parseInt(maxAltitudeEditText.getText().toString());
                 int altitudeInterval = Integer.parseInt(altitudeIntervalEditText.getText().toString());
 
                 aircraftDataManager.startDataCollection(minAltitude, maxAltitude, altitudeInterval);
-                MissionControl.getInstance().getWaypointMissionOperator().startMission(new CommonCallbacks.CompletionCallback() {
+                waypointMission.start(new Runnable() {
                     @Override
-                    public void onResult(DJIError djiError) {
+                    public void run() {
                         aircraftDataManager.stopDataCollection();
                     }
                 });
